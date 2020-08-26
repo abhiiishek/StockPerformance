@@ -1,0 +1,133 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+        <h1 class="display-4">StockPerformance Report</h1>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+            <script src="https://d3js.org/d3.v4.min.js"></script>
+        </head>
+
+        <body>
+
+            <div class="text-center">
+                <div id="div_chart_report"></div>
+                </div>
+                <script>
+                
+
+                    $(document).ready(function () {
+                        alert();
+
+     $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: 'https://localhost:44335/api/StockPerformance',
+            dataType: 'json',
+            async: true,
+        
+            success: function (data) {
+               var data = data;
+                var myDiv = "div_chart_report";
+                drawChart(myDiv, data);
+
+            },
+            error: function (result) {
+
+
+
+}
+     })
+                    })
+
+                   function drawChart(reference, pos_data){
+                       debugger;
+        $(reference).empty()
+
+        //The drawing code needs to reference a responsive elements dimneions
+        var width = $(reference).width();
+        // var width = $(reference).empty().width(); we can chain for effeicanecy as jquery returns jquery.
+
+        // var height = 230;  // We don't want the height to be responsive.
+
+        var margin = {top: 10, right: 30, bottom: 40, left: 30},
+        // width = 960 - margin.left - margin.right,
+        height = 270 - margin.top - margin.bottom;
+
+
+        var histogram = d3.layout.histogram() (pos_data);
+        //var neg_histogram = d3.layout.histogram()(neg_data);
+
+        var x = d3.scale.ordinal()
+            .domain(histogram.map(function(d) { return d.x; }))
+            .rangeRoundBands([0, width]);
+
+        var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+
+        var y = d3.scale.linear()
+            .domain([0, d3.max(histogram.map(function(d) { return d.y; }))])
+            .range([0, height]);
+
+        //var ny = d3.scale.linear()
+        //    .domain([0, d3.max(neg_histogram.map(function(d) { return d.y; }))])
+        //    .range([0, height]);
+
+        var svg = d3.select(reference).append("svg")
+            .attr("width", width)
+            .attr("height", height + 20);
+
+
+
+        svg.selectAll("rect")
+            .data(histogram)
+          .enter().append("rect")
+            .attr("width", x.rangeBand())
+            .attr("x", function(d) { return x(d.x); })
+            .attr("y", function(d) { return height - y(d.y); })
+            .attr("height", function(d) { return y(d.y); });
+
+
+        svg.append("line")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .attr("y1", height)
+            .attr("y2", height);
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + (height)  + ")")
+            .call(xAxis);
+    };
+
+    //Bind the window resize to the draw method.
+    //A simple bind example is
+
+    //A better idom for binding with resize is to debounce
+    var debounce = function(fn, timeout) 
+    {
+      var timeoutID = -1;
+      return function() {
+        if (timeoutID > -1) {
+          window.clearTimeout(timeoutID);
+        }
+        timeoutID = window.setTimeout(fn, timeout);
+      }
+    };
+
+    var debounced_draw = debounce(function() {
+      draw_histogram(div_name, pos_data);
+    }, 125);
+
+    $(window).resize(debounced_draw);
+</script>
+              
+        </body>
+    </html>
+
