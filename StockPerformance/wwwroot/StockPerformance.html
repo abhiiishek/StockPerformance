@@ -1,133 +1,321 @@
-﻿
-<h1 class="display-4">StockPerformance Report</h1>
-<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <link href="http://getbootstrap.com/examples/justified-nav/justified-nav.css" rel="stylesheet">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js"></script>
-
+   
 </head>
-
 <body>
 
-    <div class="text-center">
-        <div id="div_chart_report"></div>
-    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+
+
+
+    <a href="#" onclick="drawCurve()">Curve Chart</a><br />
+    <a href="#" onclick="drawArea()">Area Chart</a><br />
+    <a href="#" onclick="drawArea2()">Area chart with data points</a><br />
+    <a href="#" onclick="drawBar()">Bar Chart</a><br />
+    <div id="my_dataviz" style="display:none;float:left"></div>
+    <div id="my_dataviz2" style="display:none;float:left"></div>
+    <div id="my_dataviz3" style="display:none;float:left"></div>
+
+
     <script>
+        function drawCurve() {
 
+            $("#my_dataviz3").html('').show();
+          //  $("#my_dataviz2").hide();
+          //  $("#my_dataviz").hide();
 
-        $(document).ready(function () {
+            var margin = { top: 10, right: 30, bottom: 30, left: 60 },
+                width = 460 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
 
-            $.ajax({
-                type: "GET",
-                contentType: "application/json; charset=utf-8",
-                url: 'https://localhost:44335/api/StockPerformance',
-                dataType: 'json',
-                async: true,
-
-                success: function (data) {
-                    var data = data;
-                    var myDiv = "div_chart_report";
-                    drawChart(myDiv, data);
-
-                },
-                error: function (result) {
-
-
-
-                }
-            })
-        })
-
-        function drawChart(reference, pos_data) {
-
-            var margin = {
-                top: 20,
-                right: 20,
-                bottom: 30,
-                left: 40
-            },
-                width = 960 - margin.left - margin.right,
-                height = 500 - margin.top - margin.bottom;
-
-            var x = d3.scale.ordinal()
-                .rangeRoundBands([0, width], .1);
-
-            var y = d3.scale.linear()
-                .range([height, 0]);
-
-            var xAxis = d3.svg.axis()
-                .scale(x)
-                .orient("bottom");
-
-            var yAxis = d3.svg.axis()
-                .scale(y)
-                .orient("left")
-                .ticks(10, "");
-
-            var svg = d3.select("body").append("svg")
+            
+            var svg = d3.select("#my_dataviz3")
+                .append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                .attr("transform",
+                    "translate(" + margin.left + "," + margin.top + ")");
 
 
-            var data = pos_data;
-            var k = [];
-            data.forEach(function (d) {
-                d.company = d.company;
-                d.initial_price = +d.initial_price;
-                k.push(d.company)
+            d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_IC.csv", function (data) {
+
+                var x = d3.scaleLinear()
+                    .domain([1, 100])
+                    .range([0, width]);
+                svg.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
+
+                var y = d3.scaleLinear()
+                    .domain([0, 13])
+                    .range([height, 0]);
+                svg.append("g")
+                    .call(d3.axisLeft(y));
+
+                // Show confidence interval
+                svg.append("path")
+                    .datum(data)
+                    .attr("fill", "#ffffff")
+                    .attr("stroke", "none")
+                    .attr("d", d3.area()
+                        .x(function (d) { return x(d.x) })
+                        .y0(function (d) { return y(d.CI_right) })
+                        .y1(function (d) { return y(d.CI_left) })
+                    )
+
+                // Add the line
+                svg
+                    .append("path")
+                    .datum(data)
+                    .attr("fill", "none")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 1.5)
+                    .attr("d", d3.line()
+                        .x(function (d) { return x(d.x) })
+                        .y(function (d) { return y(d.y) })
+                    )
+
+            })
+        }
+        function drawArea() {
+
+            $("#my_dataviz").html('').show();
+           // $("#my_dataviz2").hide();
+          //  $("#my_dataviz3").hide();
+
+
+
+            var margin = { top: 10, right: 30, bottom: 30, left: 50 },
+                width = 460 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
+
+            var svg = d3.select("#my_dataviz")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform",
+                    "translate(" + margin.left + "," + margin.top + ")");
+
+            //Read the data
+            d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/3_TwoNumOrdered_comma.csv",
+
+
+                function (d) {
+                    return { date: d3.timeParse("%Y-%m-%d")(d.date), value: d.value }
+                },
+
+
+                function (data) {
+
+                    var x = d3.scaleTime()
+                        .domain(d3.extent(data, function (d) { return d.date; }))
+                        .range([0, width]);
+                    svg.append("g")
+                        .attr("transform", "translate(0," + height + ")")
+                        .call(d3.axisBottom(x));
+
+                    // Add Y axis
+                    var y = d3.scaleLinear()
+                        .domain([0, d3.max(data, function (d) { return +d.value; })])
+                        .range([height, 0]);
+                    svg.append("g")
+                        .call(d3.axisLeft(y));
+
+                    // Add the area
+                    svg.append("path")
+                        .datum(data)
+                        .attr("fill", "blue")
+                        .attr("stroke", "#69b3a2")
+                        .attr("stroke-width", 1.5)
+                        .attr("d", d3.area()
+                            .x(function (d) { return x(d.date) })
+                            .y0(y(0))
+                            .y1(function (d) { return y(d.value) })
+                        )
+
+                })
+
+
+        }
+        function drawArea2() {
+
+            var margin = { top: 10, right: 30, bottom: 30, left: 50 },
+                width = 460 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
+
+            var svg = d3.select("#my_dataviz")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform",
+                    "translate(" + margin.left + "," + margin.top + ")");
+
+           
+            d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/3_TwoNumOrdered_comma.csv",
+
+                
+                function (d) {
+                    return { date: d3.timeParse("%Y-%m-%d")(d.date), value: d.value }
+                },
+
+              
+                function (data) {
+
+                    data = data.filter(function (d, i) { return i < 90 })
+
+                   
+                    var x = d3.scaleTime()
+                        .domain(d3.extent(data, function (d) { return d.date; }))
+                        .range([0, width]);
+                    svg.append("g")
+                        .attr("transform", "translate(0," + (height + 5) + ")")
+                        .call(d3.axisBottom(x).ticks(5).tickSizeOuter(0));
+
+                    
+                    var y = d3.scaleLinear()
+                        .domain(d3.extent(data, function (d) { return +d.value; }))
+                        .range([height, 0]);
+                    svg.append("g")
+                        .attr("transform", "translate(-5,0)")
+                        .call(d3.axisLeft(y).tickSizeOuter(0));
+
+                   
+                    svg.append("path")
+                        .datum(data)
+                        .attr("fill", "#69b3a2")
+                        .attr("fill-opacity", .3)
+                        .attr("stroke", "none")
+                        .attr("d", d3.area()
+                            .x(function (d) { return x(d.date) })
+                            .y0(height)
+                            .y1(function (d) { return y(d.value) })
+                        )
+
+                    
+                    svg.append("path")
+                        .datum(data)
+                        .attr("fill", "none")
+                        .attr("stroke", "#69b3a2")
+                        .attr("stroke-width", 4)
+                        .attr("d", d3.line()
+                            .x(function (d) { return x(d.date) })
+                            .y(function (d) { return y(d.value) })
+                        )
+
+                  
+                    svg.selectAll("myCircles")
+                        .data(data)
+                        .enter()
+                        .append("circle")
+                        .attr("fill", "red")
+                        .attr("stroke", "none")
+                        .attr("cx", function (d) { return x(d.date) })
+                        .attr("cy", function (d) { return y(d.value) })
+                        .attr("r", 3)
+
+
+                })
+
+
+        }
+
+        function drawBar() {
+         //   $("#my_dataviz").hide();
+           // $("#my_dataviz3").hide();
+            $("#my_dataviz2").html('').show();
+            var margin = { top: 10, right: 30, bottom: 30, left: 40 },
+                width = 460 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
+
+
+            var svg = d3.select("#my_dataviz2")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform",
+                    "translate(" + margin.left + "," + margin.top + ")");
+
+            // get the data
+            d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/1_OneNum.csv", function (data) {
+
+
+                var x = d3.scaleLinear()
+                    .domain([0, 1000])
+                    .range([0, width]);
+                svg.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
+
+                var histogram = d3.histogram()
+                    .value(function (d) { return d.price; })
+                    .domain(x.domain())
+                    .thresholds(x.ticks(70));
+
+
+                var bins = histogram(data);
+
+                // Y axis: scale and draw:
+                var y = d3.scaleLinear()
+                    .range([height, 0]);
+                y.domain([0, d3.max(bins, function (d) { return d.length; })]);   // d3.hist has to be called before the Y axis obviously
+                svg.append("g")
+                    .call(d3.axisLeft(y));
+
+
+                var tooltip = d3.select("#my_dataviz2")
+                    .append("div")
+                    .style("opacity", 0)
+                    .attr("class", "tooltip")
+                    .style("background-color", "black")
+                    .style("color", "white")
+                    .style("border-radius", "5px")
+                    .style("padding", "10px")
+
+                var showTooltip = function (d) {
+                    tooltip
+                        .transition()
+                        .duration(100)
+                        .style("opacity", 1)
+                    tooltip
+                        .html("Range: " + d.x0 + " - " + d.x1)
+                        .style("left", (d3.mouse(this)[0] + 20) + "px")
+                        .style("top", (d3.mouse(this)[1]) + "px")
+                }
+                var moveTooltip = function (d) {
+                    tooltip
+                        .style("left", (d3.mouse(this)[0] + 20) + "px")
+                        .style("top", (d3.mouse(this)[1]) + "px")
+                }
+
+                var hideTooltip = function (d) {
+                    tooltip
+                        .transition()
+                        .duration(100)
+                        .style("opacity", 0)
+                }
+
+
+                svg.selectAll("rect")
+                    .data(bins)
+                    .enter()
+                    .append("rect")
+                    .attr("x", 1)
+                    .attr("transform", function (d) { return "translate(" + x(d.x0) + "," + y(d.length) + ")"; })
+                    .attr("width", function (d) { return x(d.x1) - x(d.x0) - 1; })
+                    .attr("height", function (d) { return height - y(d.length); })
+                    .style("fill", "#69b3a2")
+
+                    .on("mouseover", showTooltip)
+                    .on("mousemove", moveTooltip)
+                    .on("mouseleave", hideTooltip)
+
             });
-
-            x.domain(data.map(function (d) {
-                return d.company;
-            }));
-            y.domain([0, d3.max(data, function (d) {
-                return d.initial_price;
-            })]);
-
-            svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
-                .call(xAxis);
-
-            svg.append("g")
-                .attr("class", "y axis")
-                .call(yAxis)
-                .append("text")
-                .attr("transform", "rotate(-90)")
-                .attr("y", 6)
-                .attr("dy", ".71em")
-                .style("text-anchor", "end")
-                .text("Count");
-
-            svg.selectAll(".bar")
-                .data(data)
-                .enter().append("rect")
-                .attr("class", "bar")
-                .attr("x", function (d) {
-                    return x(d.company);
-                })
-                .attr("width", x.rangeBand())
-                .attr("y", function (d) {
-                    return y(d.initial_price);
-                })
-                .attr("height", function (d) {
-                    return height - y(d.initial_price);
-                });
-
-
-            function type(d) {
-                d.initial_price = +d.initial_price;
-                return d;
-            }
         }
     </script>
-
 </body>
 </html>
-
